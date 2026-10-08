@@ -1,0 +1,224 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-space-3);
+}
+
+/* Toolbar ---------------------------------------------------------------------------------- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--app-space-3);
+}
+
+.filters {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--app-space-2);
+}
+
+.search {
+  flex: 1 1 16rem;
+  max-width: 24rem;
+}
+
+.filter {
+  flex: 0 1 12rem;
+  min-width: 9rem;
+}
+
+.toolbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--app-space-2);
+}
+
+.selectionBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--app-space-2);
+  padding: var(--app-space-2) var(--app-space-3);
+  border: 1px solid var(--bs-primary-border-subtle);
+  border-radius: var(--app-radius-md);
+  background-color: var(--bs-primary-bg-subtle);
+}
+
+.selectionBar:empty {
+  display: none;
+}
+
+.mobileSelectAll {
+  display: flex;
+  align-items: center;
+  padding-left: 0;
+}
+
+.mobileSelectAll :global(.form-check-input) {
+  float: none;
+  margin-left: 0;
+}
+
+/* Table ------------------------------------------------------------------------------------ */
+.tableContainer {
+  /* Contains absolutely positioned descendants (e.g. .visually-hidden labels) so they are clipped
+     by the horizontal scroll container instead of widening the page on small screens. */
+  position: relative;
+  border: 1px solid var(--app-color-border);
+  border-radius: var(--app-radius-lg);
+  background-color: var(--app-color-surface);
+  box-shadow: var(--app-shadow-sm);
+}
+
+.table {
+  --bs-table-bg: transparent;
+}
+
+.table thead th {
+  background-color: var(--app-color-surface-muted);
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-xs);
+  font-weight: var(--app-font-weight-semibold);
+  letter-spacing: var(--app-letter-spacing-wide);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.sortButton:hover,
+.sorted {
+  color: var(--app-color-text);
+}
+
+.sortButton:focus-visible {
+  border-radius: var(--app-radius-sm);
+  outline: 2px solid var(--app-color-primary);
+  outline-offset: 2px;
+}
+
+.selectCell {
+  width: 2.75rem;
+}
+
+.actionsCell {
+  width: 3.5rem;
+  text-align: end;
+}
+
+.actionsToggle {
+  color: var(--app-color-text-muted);
+}
+
+.actionsToggle::after {
+  display: none;
+}
+
+.stateCell {
+  padding: 0 !important;
+}
+
+.fetching {
+  opacity: 0.6;
+  transition: opacity var(--app-transition-fast);
+}
+
+/* Footer ----------------------------------------------------------------------------------- */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--app-space-3);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-sm);
+}
+
+@media (max-width: 575.98px) {
+  .search,
+  .filter {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .footer {
+    justify-content: center;
+  }
+}
+
+/* Stacked "card" rows on small screens (responsiveMode="stack") ---------------------------- */
+@media (max-width: 767.98px) {
+  .stacked thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .stacked tbody tr {
+    display: block;
+    padding: var(--app-space-2) 0;
+    border-bottom: 1px solid var(--app-color-border);
+  }
+
+  .stacked tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .stacked tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--app-space-3);
+    width: auto;
+    border: 0;
+    padding: var(--app-space-1) var(--app-space-3);
+    text-align: end;
+  }
+
+  .stacked tbody td::before {
+    content: attr(data-label);
+    color: var(--app-color-text-muted);
+    font-size: var(--app-font-size-xs);
+    font-weight: var(--app-font-weight-semibold);
+    letter-spacing: var(--app-letter-spacing-wide);
+    text-align: start;
+    text-transform: uppercase;
+  }
+
+  .stacked tbody td.stateCell {
+    display: block;
+  }
+
+  .stacked tbody td.stateCell::before,
+  .stacked tbody tr[aria-hidden='true'] td::before {
+    content: none;
+  }
+}

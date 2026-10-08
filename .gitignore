@@ -1,0 +1,46 @@
+# --- Environment / secrets ---------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- OS / editors ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+
+# --- run.sh state (pid files, logs) ------------------------------------------
+.run/
+
+# --- Logs ----------------------------------------------------------------------
+*.log
+npm-debug.log*
+logs/
+
+# --- Frontend (Node / Vite) --------------------------------------------------
+node_modules/
+frontend/dist/
+frontend/coverage/
+*.tsbuildinfo
+.vite/
+.eslintcache
+
+# --- Backend (Python) --------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+build/
+dist/

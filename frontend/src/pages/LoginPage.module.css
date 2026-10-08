@@ -1,0 +1,15 @@
+.wrapper {
+  width: 100%;
+  max-width: 26rem;
+}
+
+.title {
+  margin-bottom: var(--app-space-1);
+  font-size: var(--app-font-size-2xl);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.subtitle {
+  margin-bottom: var(--app-space-5);
+  color: var(--app-color-text-muted);
+}

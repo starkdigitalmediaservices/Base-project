@@ -1,0 +1,14 @@
+.nameCell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--app-space-2);
+  min-width: 0;
+}
+
+.name {
+  font-weight: var(--app-font-weight-medium);
+}
+
+.email {
+  word-break: break-all;
+}

@@ -1,0 +1,17 @@
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--app-space-2);
+  color: var(--app-color-primary);
+}
+
+.wrapper span:not(:global(.visually-hidden)) {
+  color: var(--app-color-text-muted);
+}
+
+.fullPage {
+  display: flex;
+  min-height: 60vh;
+  align-items: center;
+  justify-content: center;
+}

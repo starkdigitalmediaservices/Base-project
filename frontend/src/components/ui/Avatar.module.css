@@ -1,0 +1,31 @@
+.avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background-color: color-mix(in srgb, var(--app-color-primary) 18%, var(--app-color-surface));
+  color: var(--bs-primary-text-emphasis);
+  font-weight: var(--app-font-weight-semibold);
+  object-fit: cover;
+  user-select: none;
+}
+
+.sm {
+  width: 2rem;
+  height: 2rem;
+  font-size: var(--app-font-size-xs);
+}
+
+.md {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: var(--app-font-size-sm);
+}
+
+.lg {
+  width: 4rem;
+  height: 4rem;
+  font-size: var(--app-font-size-xl);
+}

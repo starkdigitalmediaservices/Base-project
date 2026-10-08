@@ -1,0 +1,39 @@
+.container {
+  z-index: var(--app-z-skip-link);
+}
+
+.toast {
+  border-left-width: 4px;
+}
+
+.success {
+  border-left-color: var(--app-color-success);
+}
+
+.danger {
+  border-left-color: var(--app-color-danger);
+}
+
+.warning {
+  border-left-color: var(--app-color-warning);
+}
+
+.info {
+  border-left-color: var(--app-color-info);
+}
+
+.success .icon {
+  color: var(--app-color-success);
+}
+
+.danger .icon {
+  color: var(--app-color-danger);
+}
+
+.warning .icon {
+  color: var(--bs-warning-text-emphasis);
+}
+
+.info .icon {
+  color: var(--app-color-info);
+}

@@ -1,0 +1,76 @@
+/*
+ * Global base styles. Keep this file small: component styles belong in *.module.css files next to
+ * the component, and every value should come from theme tokens (src/theme/tokens.css).
+ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--app-color-background);
+  color: var(--app-color-text);
+  font-family: var(--app-font-family-sans);
+  line-height: var(--app-line-height-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color var(--app-transition-base),
+    color var(--app-transition-base);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  line-height: var(--app-line-height-tight);
+  font-weight: var(--app-font-weight-semibold);
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--app-font-family-mono);
+}
+
+/* Visible focus for every interactive element that does not define its own ring. */
+:focus-visible {
+  outline: 2px solid var(--app-color-primary);
+  outline-offset: 2px;
+}
+
+/* Skip link: hidden until focused, then pinned to the top-left corner. */
+.skip-link {
+  position: absolute;
+  top: var(--app-space-2);
+  left: var(--app-space-2);
+  z-index: var(--app-z-skip-link);
+  padding: var(--app-space-2) var(--app-space-4);
+  border-radius: var(--app-radius-md);
+  background-color: var(--app-color-primary);
+  color: var(--app-color-on-primary);
+  font-weight: var(--app-font-weight-semibold);
+  transform: translateY(-200%);
+  transition: transform var(--app-transition-fast);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  color: var(--app-color-on-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

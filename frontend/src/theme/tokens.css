@@ -1,0 +1,172 @@
+/*
+ * Design tokens — the single source of truth for colours, typography, spacing, radii, shadows,
+ * motion and layout sizes.
+ *
+ * To re-brand the application, edit the values in this file only. Bootstrap variables and
+ * component styles read these tokens (see bootstrap-overrides.css and *.module.css files), so a
+ * change here restyles buttons, alerts, badges, forms, tables, navigation and custom components.
+ *
+ * Light values live on :root / [data-bs-theme='light']; dark values on [data-bs-theme='dark'].
+ * The theme switcher sets data-bs-theme on <html>.
+ *
+ * Responsive breakpoints follow Bootstrap 5.3 (media queries cannot read custom properties):
+ *   sm ≥ 576px · md ≥ 768px · lg ≥ 992px · xl ≥ 1200px · xxl ≥ 1400px
+ *   mobile < 768px · tablet 768–991px · desktop 992–1399px · large ≥ 1400px
+ */
+
+:root,
+[data-bs-theme='light'] {
+  color-scheme: light;
+
+  /* Brand and semantic colours */
+  --app-color-primary: #2f5bea;
+  --app-color-secondary: #5b6474;
+  --app-color-accent: #7c3aed;
+  --app-color-success: #1d7a46;
+  --app-color-warning: #f0b429;
+  --app-color-danger: #c42b2b;
+  --app-color-info: #0f7490;
+
+  /* Readable text colours to place on top of each semantic colour */
+  --app-color-on-primary: #ffffff;
+  --app-color-on-secondary: #ffffff;
+  --app-color-on-accent: #ffffff;
+  --app-color-on-success: #ffffff;
+  --app-color-on-warning: #1b1f27;
+  --app-color-on-danger: #ffffff;
+  --app-color-on-info: #ffffff;
+
+  /* Surfaces and text */
+  --app-color-background: #f4f6fb;
+  --app-color-surface: #ffffff;
+  --app-color-surface-muted: #eef1f7;
+  --app-color-border: #d8dde7;
+  --app-color-border-strong: #b5bdcc;
+  --app-color-text: #1b2230;
+  --app-color-text-muted: #556072;
+  --app-color-link: #2449c9;
+  --app-color-link-hover: #1a379b;
+
+  /* Colour used to derive hover/active shades with color-mix() */
+  --app-color-shade: #0b1020;
+  --app-color-backdrop: #0b1020;
+
+  /* Focus ring */
+  --app-focus-ring-color: rgb(47 91 234 / 45%);
+  --app-focus-ring-width: 0.25rem;
+
+  /* Shadows */
+  --app-shadow-sm: 0 1px 2px rgb(16 24 40 / 6%), 0 1px 3px rgb(16 24 40 / 10%);
+  --app-shadow-md: 0 4px 8px -2px rgb(16 24 40 / 10%), 0 2px 4px -2px rgb(16 24 40 / 6%);
+  --app-shadow-lg: 0 12px 24px -4px rgb(16 24 40 / 14%), 0 4px 8px -4px rgb(16 24 40 / 8%);
+
+  /* Skeleton loader shimmer */
+  --app-skeleton-base: #e4e8f0;
+  --app-skeleton-highlight: #f3f5f9;
+}
+
+[data-bs-theme='dark'] {
+  color-scheme: dark;
+
+  --app-color-primary: #7c9cff;
+  --app-color-secondary: #9aa4b5;
+  --app-color-accent: #b794f6;
+  --app-color-success: #4cc38a;
+  --app-color-warning: #f5c451;
+  --app-color-danger: #ff7a7a;
+  --app-color-info: #4fc3e0;
+
+  --app-color-on-primary: #0b1020;
+  --app-color-on-secondary: #0b1020;
+  --app-color-on-accent: #0b1020;
+  --app-color-on-success: #0b1020;
+  --app-color-on-warning: #0b1020;
+  --app-color-on-danger: #0b1020;
+  --app-color-on-info: #0b1020;
+
+  --app-color-background: #0f141c;
+  --app-color-surface: #171d28;
+  --app-color-surface-muted: #1f2734;
+  --app-color-border: #2c3646;
+  --app-color-border-strong: #44516a;
+  --app-color-text: #e6e9f0;
+  --app-color-text-muted: #a3adbf;
+  --app-color-link: #9db4ff;
+  --app-color-link-hover: #c3d1ff;
+
+  --app-color-shade: #ffffff;
+  --app-color-backdrop: #000000;
+
+  --app-focus-ring-color: rgb(124 156 255 / 55%);
+
+  --app-shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --app-shadow-md: 0 4px 10px -2px rgb(0 0 0 / 50%);
+  --app-shadow-lg: 0 12px 28px -4px rgb(0 0 0 / 60%);
+
+  --app-skeleton-base: #232c3a;
+  --app-skeleton-highlight: #2e394a;
+}
+
+/* Theme-independent tokens */
+:root {
+  /* Typography */
+  --app-font-family-sans:
+    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --app-font-family-mono:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  --app-font-size-xs: 0.75rem;
+  --app-font-size-sm: 0.875rem;
+  --app-font-size-base: 1rem;
+  --app-font-size-lg: 1.125rem;
+  --app-font-size-xl: 1.375rem;
+  --app-font-size-2xl: 1.75rem;
+  --app-font-size-3xl: 2.25rem;
+  --app-font-weight-regular: 400;
+  --app-font-weight-medium: 500;
+  --app-font-weight-semibold: 600;
+  --app-font-weight-bold: 700;
+  --app-line-height-tight: 1.25;
+  --app-line-height-base: 1.55;
+  --app-letter-spacing-wide: 0.04em;
+
+  /* Spacing scale (4px base) */
+  --app-space-1: 0.25rem;
+  --app-space-2: 0.5rem;
+  --app-space-3: 0.75rem;
+  --app-space-4: 1rem;
+  --app-space-5: 1.5rem;
+  --app-space-6: 2rem;
+  --app-space-7: 3rem;
+  --app-space-8: 4rem;
+
+  /* Radii */
+  --app-radius-sm: 0.25rem;
+  --app-radius-md: 0.5rem;
+  --app-radius-lg: 0.75rem;
+  --app-radius-xl: 1rem;
+  --app-radius-pill: 50rem;
+
+  /* Motion */
+  --app-transition-fast: 120ms ease-out;
+  --app-transition-base: 200ms ease-in-out;
+  --app-transition-slow: 320ms ease-in-out;
+
+  /* Layout */
+  --app-header-height: 3.75rem;
+  --app-sidebar-width: 16rem;
+  --app-sidebar-collapsed-width: 4.5rem;
+  --app-content-max-width: 96rem;
+
+  /* Stacking */
+  --app-z-sidebar: 1030;
+  --app-z-header: 1040;
+  --app-z-skip-link: 1090;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --app-transition-fast: 0ms linear;
+    --app-transition-base: 0ms linear;
+    --app-transition-slow: 0ms linear;
+  }
+}

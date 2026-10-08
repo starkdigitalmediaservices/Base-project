@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Illustrated mountain landscape">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6d8dfa"/>
+      <stop offset="1" stop-color="#c9d6ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#sky)"/>
+  <circle cx="500" cy="90" r="42" fill="#ffd36e"/>
+  <path d="M0 260 L140 130 L250 230 L360 110 L520 260 L640 180 L640 360 L0 360 Z" fill="#3b4f9a"/>
+  <path d="M0 300 L120 220 L260 290 L420 210 L640 300 L640 360 L0 360 Z" fill="#26346b"/>
+</svg>
