@@ -24,6 +24,20 @@ class User(TimestampMixin, Base):
         Index("ix_users_created_at_id", "created_at", "id"),
         # The list endpoint allows sorting by name.
         Index("ix_users_name_id", "name", "id"),
+        # GIN trigram indexes for ILIKE '%term%' search (added by migration a1b2c3d4e5f6).
+        # Requires the pg_trgm extension. The migration creates the extension and the indexes.
+        Index(
+            "ix_users_name_trgm",
+            "name",
+            postgresql_using="gin",
+            postgresql_ops={"name": "gin_trgm_ops"},
+        ),
+        Index(
+            "ix_users_email_trgm",
+            "email",
+            postgresql_using="gin",
+            postgresql_ops={"email": "gin_trgm_ops"},
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)

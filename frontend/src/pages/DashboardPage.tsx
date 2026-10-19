@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
 import { Link } from 'react-router';
@@ -5,42 +6,14 @@ import { Link } from 'react-router';
 import { AppCard } from '@/components/ui/AppCard';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { type Permission, PERMISSIONS } from '@/features/auth/permissions';
 import { useAuth } from '@/features/auth/useAuth';
 import { StatCard } from '@/features/dashboard/StatCard';
 import { ROUTES } from '@/routes/paths';
-
-/** DEMO DATA — static placeholder metrics. Replace with a real metrics endpoint. */
-const DEMO_STATS = [
-  {
-    label: 'Active users',
-    value: '1,284',
-    icon: 'people',
-    tone: 'primary',
-    trend: { direction: 'up', text: '4.2% vs last week' },
-  },
-  {
-    label: 'New sign-ups',
-    value: '96',
-    icon: 'person-check',
-    tone: 'success',
-    trend: { direction: 'up', text: '12 today' },
-  },
-  {
-    label: 'Pending reviews',
-    value: '7',
-    icon: 'exclamation-triangle',
-    tone: 'warning',
-    trend: { direction: 'down', text: '3 fewer than yesterday' },
-  },
-  { label: 'API uptime', value: '99.98%', icon: 'shield-check', tone: 'info' },
-] as const satisfies readonly {
-  label: string;
-  value: string;
-  icon: IconName;
-  tone: 'primary' | 'success' | 'warning' | 'info';
-  trend?: { direction: 'up' | 'down'; text: string };
-}[];
+import { queryKeys } from '@/services/queryKeys';
+import { statsService } from '@/services/statsService';
+import type { DashboardStats } from '@/types/stats';
 
 const QUICK_LINKS: {
   label: string;
@@ -77,9 +50,51 @@ const QUICK_LINKS: {
   },
 ];
 
+function buildStats(data: DashboardStats): readonly {
+  label: string;
+  value: string;
+  icon: IconName;
+  tone: 'primary' | 'success' | 'warning' | 'info';
+}[] {
+  return [
+    {
+      label: 'Total users',
+      value: data.total_users.toLocaleString(),
+      icon: 'people',
+      tone: 'primary',
+    },
+    {
+      label: 'Active users',
+      value: data.active_users.toLocaleString(),
+      icon: 'person-check',
+      tone: 'success',
+    },
+    {
+      label: 'Inactive users',
+      value: data.inactive_users.toLocaleString(),
+      icon: 'person-x',
+      tone: 'warning',
+    },
+    {
+      label: 'Logins (24 h)',
+      value: data.logins_last_24h.toLocaleString(),
+      icon: 'shield-check',
+      tone: 'info',
+    },
+  ] as const;
+}
+
 export function DashboardPage() {
   const { user, hasPermission } = useAuth();
   const links = QUICK_LINKS.filter((link) => hasPermission(link.permission));
+  const canReadStats = hasPermission(PERMISSIONS.USERS_READ);
+
+  const statsQuery = useQuery({
+    queryKey: queryKeys.stats.dashboard,
+    queryFn: ({ signal }) => statsService.getDashboard(signal),
+    enabled: canReadStats,
+    staleTime: 60_000,
+  });
 
   return (
     <>
@@ -90,15 +105,26 @@ export function DashboardPage() {
           <h2 id="metrics-heading" className="fs-5 mb-0">
             Key metrics
           </h2>
-          <span className="badge text-bg-warning">Demo data</span>
+          {!canReadStats && <span className="badge text-bg-secondary">No access</span>}
         </div>
-        <Row xs={1} sm={2} xl={4} className="g-3">
-          {DEMO_STATS.map((stat) => (
-            <Col key={stat.label}>
-              <StatCard {...stat} />
-            </Col>
-          ))}
-        </Row>
+        {!canReadStats ? (
+          <p className="text-body-secondary small">Requires users:read permission.</p>
+        ) : (
+          <Row xs={1} sm={2} xl={4} className="g-3">
+            {statsQuery.isPending
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <Col key={i}>
+                    <Skeleton variant="rect" />
+                  </Col>
+                ))
+              : statsQuery.data &&
+                buildStats(statsQuery.data).map((stat) => (
+                  <Col key={stat.label}>
+                    <StatCard {...stat} />
+                  </Col>
+                ))}
+          </Row>
+        )}
       </section>
 
       <Row className="g-3">

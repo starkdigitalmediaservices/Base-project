@@ -8,6 +8,7 @@ export const profileSchema = z.object({
     .trim()
     .min(1, 'Name is required.')
     .max(150, 'Name must be at most 150 characters.'),
+  email: z.string().trim().email('Enter a valid email address.').toLowerCase(),
 });
 
 export type ProfileValues = z.infer<typeof profileSchema>;

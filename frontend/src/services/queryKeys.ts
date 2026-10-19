@@ -13,4 +13,7 @@ export const queryKeys = {
     list: (params: RoleListParams) => ['roles', 'list', params] as const,
     detail: (id: number) => ['roles', 'detail', id] as const,
   },
+  stats: {
+    dashboard: ['stats', 'dashboard'] as const,
+  },
 };

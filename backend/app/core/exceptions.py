@@ -72,6 +72,12 @@ class ConflictError(AppError):
     message = "The request conflicts with the current state of the resource."
 
 
+class TooManyRequestsError(AppError):
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
+    code = "too_many_requests"
+    message = "Too many requests. Please wait before trying again."
+
+
 class ServiceUnavailableError(AppError):
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     code = "service_unavailable"

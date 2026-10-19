@@ -49,6 +49,7 @@ class UserUpdate(InputSchema):
 
 class ProfileUpdate(InputSchema):
     name: PersonName
+    email: NormalizedEmail | None = None
 
 
 class PasswordChange(InputSchema):
@@ -68,3 +69,17 @@ class UserListQuery(AppSchema):
     is_active: bool | None = None
     sort_by: UserSortField = UserSortField.CREATED_AT
     sort_order: SortOrder = SortOrder.DESC
+
+
+class UserBulkStatusUpdate(InputSchema):
+    """Activate or deactivate a list of users in one request."""
+
+    user_ids: list[int] = Field(min_length=1, max_length=100, description="IDs of users to update.")
+    is_active: bool = Field(description="True to activate, False to deactivate.")
+
+
+class UserBulkStatusResult(AppSchema):
+    updated: int = Field(description="Number of users whose status was changed.")
+    skipped: int = Field(
+        description="Number of users skipped (own account or already in target state)."
+    )

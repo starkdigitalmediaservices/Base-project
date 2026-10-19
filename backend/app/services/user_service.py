@@ -12,7 +12,14 @@ from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.role_repository import RoleRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.pagination import Page, PageParams
-from app.schemas.user import UserCreate, UserListQuery, UserRead, UserUpdate
+from app.schemas.user import (
+    UserBulkStatusResult,
+    UserBulkStatusUpdate,
+    UserCreate,
+    UserListQuery,
+    UserRead,
+    UserUpdate,
+)
 from app.services.audit_service import AuditAction, AuditService
 from app.utils.request import ClientInfo
 from app.utils.time import utcnow
@@ -122,6 +129,61 @@ class UserService:
         )
         self.session.commit()
         return user
+
+    def bulk_update_status(
+        self, data: UserBulkStatusUpdate, *, actor: User, client: ClientInfo
+    ) -> UserBulkStatusResult:
+        """Activate or deactivate multiple users atomically.
+
+        The actor's own account is always skipped to prevent self-lockout.
+        Users already in the target state are skipped (no-op, not an error).
+        """
+        user_ids = list(dict.fromkeys(data.user_ids))  # deduplicate, preserve order
+        updated = 0
+        skipped = 0
+
+        for user_id in user_ids:
+            if user_id == actor.id:
+                skipped += 1
+                continue
+            user = self.users.get(user_id)
+            if user is None or user.is_active == data.is_active:
+                skipped += 1
+                continue
+            user.is_active = data.is_active
+            if not data.is_active:
+                self.tokens.revoke_all_for_user(user.id, now=utcnow())
+            self.audit.record(
+                AuditAction.USER_UPDATED,
+                actor_id=actor.id,
+                resource_type="user",
+                resource_id=user.id,
+                metadata={"fields": ["is_active"], "is_active": data.is_active, "bulk": True},
+                client=client,
+            )
+            updated += 1
+
+        self.session.commit()
+        return UserBulkStatusResult(updated=updated, skipped=skipped)
+
+    def delete_user(self, user_id: int, *, actor: User, client: ClientInfo) -> None:
+        """Permanently delete a user. The actor cannot delete themselves."""
+        user = self.get_user(user_id)
+        if user.id == actor.id:
+            raise BadRequestError("You cannot delete your own account.")
+        # Revoke all sessions before deletion so FK cascades are clean.
+        self.tokens.revoke_all_for_user(user.id, now=utcnow())
+        self.session.flush()
+        self.audit.record(
+            AuditAction.USER_DELETED,
+            actor_id=actor.id,
+            resource_type="user",
+            resource_id=user.id,
+            metadata={"email": user.email, "name": user.name},
+            client=client,
+        )
+        self.session.delete(user)
+        self.session.commit()
 
     def _get_role_or_error(self, role_id: int) -> Role:
         role = self.roles.get(role_id)

@@ -1,7 +1,8 @@
 """FastAPI application factory and ASGI entrypoint (`uvicorn app.main:app`)."""
 
+import asyncio
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +14,33 @@ from app.core.logging import configure_logging, get_logger
 from app.core.middleware import REQUEST_ID_HEADER, RequestContextMiddleware
 
 logger = get_logger(__name__)
+
+# How often (seconds) the background task purges expired refresh tokens.
+_TOKEN_PURGE_INTERVAL_SECONDS = 3600  # 1 hour
+
+
+async def _purge_expired_tokens_loop() -> None:
+    """Background coroutine: purges expired refresh tokens every hour."""
+    from app.db.session import get_session
+    from app.services.auth_service import AuthService
+
+    while True:
+        try:
+            await asyncio.sleep(_TOKEN_PURGE_INTERVAL_SECONDS)
+            # Use a short-lived session, just like a CLI command would.
+            session_gen = get_session()
+            session = next(session_gen)
+            try:
+                deleted = AuthService(session).purge_expired_tokens()
+                if deleted:
+                    logger.info("purge_expired_tokens", extra={"deleted": deleted})
+            finally:
+                with suppress(StopIteration):
+                    next(session_gen)
+        except asyncio.CancelledError:
+            break
+        except Exception:
+            logger.exception("purge_expired_tokens task failed; will retry next cycle")
 
 
 @asynccontextmanager
@@ -34,7 +62,18 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
                 "PostgreSQL is unavailable; see the message above."
             ) from None
         logger.info("database connection ok", extra={"database": db.describe_database(db.engine)})
+
+    # Start the background token-purge task (runs every hour while the server is up).
+    purge_task = asyncio.create_task(_purge_expired_tokens_loop())
+    logger.info(
+        "background token-purge task started", extra={"interval_s": _TOKEN_PURGE_INTERVAL_SECONDS}
+    )
+
     yield
+
+    purge_task.cancel()
+    with suppress(asyncio.CancelledError):
+        await purge_task
     db.engine.dispose()
     logger.info("application stopped")
 

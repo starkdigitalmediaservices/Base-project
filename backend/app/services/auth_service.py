@@ -3,11 +3,19 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.exceptions import BadRequestError, ForbiddenError, UnauthorizedError
+from app.core.exceptions import (
+    BadRequestError,
+    ConflictError,
+    ForbiddenError,
+    TooManyRequestsError,
+    UnauthorizedError,
+)
 from app.core.logging import get_logger
+from app.core.rate_limit import get_login_rate_limiter
 from app.core.security import (
     create_access_token,
     generate_refresh_token,
@@ -51,6 +59,18 @@ class AuthService:
 
     # -- Login -------------------------------------------------------------------------
     def login(self, *, email: str, password: str, client: ClientInfo) -> AuthResult:
+        # Rate-limit by normalised email address to prevent brute-force attacks.
+        limiter = get_login_rate_limiter()
+        rate_key = email.lower().strip()
+        if not limiter.is_allowed(rate_key):
+            logger.warning(
+                "Login rate limit exceeded",
+                extra={"email": email, "ip_address": client.ip_address},
+            )
+            raise TooManyRequestsError(
+                "Too many login attempts. Please wait a few minutes before trying again."
+            )
+
         user = self.users.get_by_email(email)
         password_ok = verify_password(password, user.password_hash if user else None)
 
@@ -74,6 +94,8 @@ class AuthService:
             self.session.commit()
             raise ForbiddenError("This account is disabled.", code="inactive_user")
 
+        # Clear the rate-limit counter on success so genuine users aren't locked out.
+        limiter.reset(rate_key)
         result = self._issue_tokens(user, client)
         self.audit.record(
             AuditAction.LOGIN_SUCCEEDED,
@@ -146,13 +168,50 @@ class AuthService:
 
     # -- Account -----------------------------------------------------------------------
     def update_profile(self, user: User, data: ProfileUpdate, *, client: ClientInfo) -> User:
+        changes: list[str] = []
         user.name = data.name
+        changes.append("name")
+
+        if data.email is not None and data.email != user.email:
+            if self.users.email_exists(data.email, exclude_id=user.id):
+                message = "A user with this email already exists."
+                raise ConflictError(
+                    message,
+                    details=[
+                        {
+                            "field": "email",
+                            "loc": ["body", "email"],
+                            "message": message,
+                            "type": "duplicate",
+                        }
+                    ],
+                )
+            user.email = data.email
+            changes.append("email")
+
+        try:
+            self.session.flush()
+        except IntegrityError:
+            self.session.rollback()
+            message = "A user with this email already exists."
+            raise ConflictError(
+                message,
+                details=[
+                    {
+                        "field": "email",
+                        "loc": ["body", "email"],
+                        "message": message,
+                        "type": "duplicate",
+                    }
+                ],
+            ) from None
+
         self.audit.record(
             AuditAction.PROFILE_UPDATED,
             actor_id=user.id,
             resource_type="user",
             resource_id=user.id,
-            metadata={"fields": ["name"]},
+            metadata={"fields": sorted(changes)},
             client=client,
         )
         self.session.commit()

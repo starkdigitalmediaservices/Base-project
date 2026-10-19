@@ -10,7 +10,12 @@ import { useAuth } from '@/features/auth/useAuth';
 import { buildUserColumns } from '@/features/users/userColumns';
 import { UserFormModal } from '@/features/users/UserFormModal';
 import { toUserListParams } from '@/features/users/userListParams';
-import { useRoleOptions, useSetUsersActive, useUsersList } from '@/features/users/useUsers';
+import {
+  useDeleteUser,
+  useRoleOptions,
+  useSetUsersActive,
+  useUsersList,
+} from '@/features/users/useUsers';
 import { useFormModal } from '@/hooks/useFormModal';
 import { getErrorMessage } from '@/services/apiError';
 import type { User } from '@/types/user';
@@ -20,6 +25,10 @@ const INITIAL_FILTERS = { role_id: '', is_active: '' };
 interface StatusChange {
   users: User[];
   isActive: boolean;
+}
+
+interface DeleteTarget {
+  user: User;
 }
 
 /** Users administration: backend-paginated table with search, filters, sorting and CRUD actions. */
@@ -36,7 +45,9 @@ export function UsersPage() {
 
   const formModal = useFormModal<User>();
   const [statusChange, setStatusChange] = useState<StatusChange | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const setUsersActive = useSetUsersActive();
+  const deleteUser = useDeleteUser();
 
   const columns = useMemo(
     () => buildUserColumns(roleOptions, currentUser?.id),
@@ -55,6 +66,15 @@ export function UsersPage() {
         hidden: !canWrite,
         disabled: isSelf,
         onClick: () => setStatusChange({ users: [user], isActive: !user.is_active }),
+      },
+      {
+        id: 'delete',
+        label: 'Delete',
+        icon: 'trash',
+        variant: 'danger',
+        hidden: !canWrite,
+        disabled: isSelf,
+        onClick: () => setDeleteTarget({ user }),
       },
     ];
   };
@@ -82,24 +102,31 @@ export function UsersPage() {
   const confirmStatusChange = async () => {
     if (!statusChange) return;
     try {
-      const { succeeded, failed } = await setUsersActive.mutateAsync({
+      const result = await setUsersActive.mutateAsync({
         users: statusChange.users,
         isActive: statusChange.isActive,
       });
       const verb = statusChange.isActive ? 'activated' : 'deactivated';
-      if (succeeded.length > 0) {
-        showToast({ variant: 'success', message: `${succeeded.length} user(s) ${verb}.` });
-      }
-      if (failed.length > 0) {
-        showToast({
-          variant: 'danger',
-          message: `Could not update: ${failed.map((user) => user.name).join(', ')}.`,
-        });
-      }
+      showToast({
+        variant: 'success',
+        message: `${result.updated} user(s) ${verb}${result.skipped > 0 ? ` (${result.skipped} skipped)` : ''}.`,
+      });
     } catch (error) {
       showToast({ variant: 'danger', message: getErrorMessage(error) });
     } finally {
       setStatusChange(null);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteUser.mutateAsync(deleteTarget.user.id);
+      showToast({ variant: 'success', message: `User ${deleteTarget.user.name} deleted.` });
+    } catch (error) {
+      showToast({ variant: 'danger', message: getErrorMessage(error) });
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -140,7 +167,7 @@ export function UsersPage() {
         bulkActions={[
           {
             id: 'deactivate',
-            label: 'Deactivate selected (demo)',
+            label: 'Deactivate selected',
             icon: 'person-x',
             variant: 'outline-danger',
             onClick: requestBulkDeactivate,
@@ -175,6 +202,17 @@ export function UsersPage() {
         isLoading={setUsersActive.isPending}
         onConfirm={() => void confirmStatusChange()}
         onCancel={() => setStatusChange(null)}
+      />
+
+      <ConfirmDialog
+        show={deleteTarget !== null}
+        title="Delete user"
+        message={`Permanently delete ${deleteTarget?.user.name ?? 'this user'}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        isLoading={deleteUser.isPending}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setDeleteTarget(null)}
       />
     </>
   );

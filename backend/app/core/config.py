@@ -85,6 +85,12 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     log_format: Literal["json", "console"] = "json"
 
+    # --- Rate limiting -----------------------------------------------------
+    # Login endpoint: max attempts per window per email address (in-memory, single process).
+    login_rate_limit_max_attempts: int = Field(default=10, ge=1)
+    # Sliding window size in seconds (default: 5 minutes).
+    login_rate_limit_window_seconds: int = Field(default=300, ge=10)
+
     # --- Seed data ---------------------------------------------------------
     first_admin_name: str = "Administrator"
     first_admin_email: str | None = None
@@ -149,6 +155,11 @@ class Settings(BaseSettings):
                 )
             if not self.refresh_cookie_secure:
                 raise ValueError("REFRESH_COOKIE_SECURE must be true in production")
+            if self.enable_docs:
+                raise ValueError(
+                    "ENABLE_DOCS must be false in production. "
+                    "OpenAPI docs expose your API schema; set ENABLE_DOCS=false in production."
+                )
         return self
 
     @property

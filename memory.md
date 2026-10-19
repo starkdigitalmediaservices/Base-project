@@ -673,3 +673,177 @@ None. `requirements*.txt` and `uv.lock` are unchanged; `docker`/Compose is no lo
   `DATABASE_URL` in `backend/.env`:
   `sudo -u postgres psql -c "CREATE ROLE base_project WITH LOGIN PASSWORD '<password from backend/.env>' CREATEDB;" -c "CREATE DATABASE base_project OWNER base_project;"`
   Then run `./run.sh start`.
+
+---
+
+## 2026-10-19 16:20 — Foundation enhancements: security hardening, feature additions, UX polish
+
+### Purpose
+
+Add the enhancements identified in the post-creation review: security headers, login rate
+limiting, production-docs guard, profile email update, audit log date filters, pg_trgm search
+indexes, bulk user status endpoint, hard-delete endpoint, real dashboard stats, session-expiry
+UX, and a scheduled background token-purge task.
+
+### Summary of changes
+
+**Security**
+- `middleware.py`: Added `Content-Security-Policy` and `Permissions-Policy` response headers.
+- `config.py`: Production startup guard now rejects `ENABLE_DOCS=true` (prevents Swagger
+  exposure in production).
+- New `app/core/rate_limit.py`: in-memory sliding-window `SlidingWindowRateLimiter`. Two new
+  settings: `LOGIN_RATE_LIMIT_MAX_ATTEMPTS` (default 10) and
+  `LOGIN_RATE_LIMIT_WINDOW_SECONDS` (default 300 s). The rate-limit counter resets on a
+  successful login.
+- `auth_service.py` login: enforces the rate limit before password verification; raises
+  `TooManyRequestsError` (429) when exceeded.
+- `exceptions.py`: added `TooManyRequestsError`.
+- `schemas/common.py`: added 429 to `_ERROR_DESCRIPTIONS`.
+- `routes/auth.py` `/login`: documents 429 in `responses=`.
+
+**Profile email update**
+- `schemas/user.py` `ProfileUpdate`: added optional `email` field.
+- `auth_service.py` `update_profile`: handles email change with duplicate-email detection
+  (409) and IntegrityError fallback; records changed fields in audit metadata.
+- `routes/auth.py` `PATCH /me`: documents 409.
+- Frontend `types/auth.ts`: `UpdateProfileInput.email` added as optional.
+- Frontend `accountSchemas.ts`: `profileSchema` now includes email.
+- Frontend `ProfileForm.tsx`: email field is editable; handles 409 on the field.
+
+**Audit log date-range filter**
+- `schemas/audit_log.py`: added `from_date` and `to_date` fields with a cross-field validator
+  ensuring `from_date <= to_date`.
+- `repositories/audit_log_repository.py`: applies `created_at >= from_date` and
+  `created_at <= to_date` conditions when set.
+
+**pg_trgm GIN indexes**
+- New migration `a1b2c3d4e5f6`: enables `pg_trgm` extension, creates
+  `ix_users_name_trgm` and `ix_users_email_trgm` GIN indexes for ILIKE search acceleration.
+- `models/user.py`: declared the two GIN indexes using `postgresql_using="gin"` and
+  `postgresql_ops` so `compare_metadata` stays green.
+
+**Bulk user status endpoint + hard delete**
+- `schemas/user.py`: added `UserBulkStatusUpdate` (up to 100 IDs) and `UserBulkStatusResult`.
+- `services/user_service.py`: `bulk_update_status` (skips self, skips already-in-state users,
+  revokes sessions on deactivation) and `delete_user` (prevents self-delete, revokes sessions
+  before deletion).
+- `services/audit_service.py`: added `USER_DELETED` audit action.
+- `routes/users.py`: `PATCH /users/bulk-status` (before `/{user_id}` to avoid routing
+  conflict) and `DELETE /users/{user_id}`.
+- Frontend `types/user.ts`: `UserBulkStatusInput`, `UserBulkStatusResult`.
+- Frontend `usersService.ts`: `bulkSetActive` and `delete` methods.
+- Frontend `useUsers.ts`: `useSetUsersActive` now calls the backend bulk endpoint (no more
+  client-side loop); new `useDeleteUser` hook.
+- Frontend `UsersPage.tsx`: "Deactivate selected" label without "(demo)"; delete row action
+  with confirm dialog; `confirmDelete` handler.
+
+**Dashboard real metrics**
+- New `app/schemas/stats.py` `DashboardStats`.
+- New `app/services/stats_service.py` `StatsService.get_dashboard_stats`: counts total/active
+  users, roles, and 24-hour logins via five focused SQL aggregates.
+- New `app/api/routes/stats.py` `GET /stats` (requires `users:read`).
+- `router.py`: registered `/stats` route and OpenAPI tag.
+- Frontend `types/stats.ts`, `services/statsService.ts`, `services/queryKeys.ts` (`stats.dashboard`).
+- Frontend `DashboardPage.tsx`: fetches real stats via `useQuery`; shows skeletons while
+  loading; falls back to a "No access" message for users without `users:read`.
+
+**Session expiry toast**
+- `LoginPage.tsx`: shows a Bootstrap `Alert` when `endReason === 'expired'` so users know
+  their session timed out.
+
+**Background token purge**
+- `main.py`: `_purge_expired_tokens_loop` asyncio coroutine launched at startup; runs
+  `AuthService.purge_expired_tokens()` every hour; cancelled cleanly on shutdown. Replaces the
+  manual-CLI-only approach.
+
+### Files added
+
+- `backend/app/core/rate_limit.py`
+- `backend/app/schemas/stats.py`
+- `backend/app/services/stats_service.py`
+- `backend/app/api/routes/stats.py`
+- `backend/app/db/migrations/versions/20261019_1030_a1b2c3d4e5f6_add_pg_trgm_search_indexes.py`
+- `frontend/src/types/stats.ts`
+- `frontend/src/services/statsService.ts`
+
+### Files modified
+
+- `backend/app/core/middleware.py` — security headers
+- `backend/app/core/config.py` — production docs guard, rate-limit settings
+- `backend/app/core/exceptions.py` — TooManyRequestsError
+- `backend/app/services/auth_service.py` — rate limiting, email update in profile
+- `backend/app/schemas/common.py` — 429 description
+- `backend/app/schemas/user.py` — ProfileUpdate.email, UserBulkStatusUpdate/Result
+- `backend/app/schemas/audit_log.py` — from_date/to_date
+- `backend/app/repositories/audit_log_repository.py` — date filter conditions
+- `backend/app/models/user.py` — GIN index declarations
+- `backend/app/services/user_service.py` — bulk_update_status, delete_user
+- `backend/app/services/audit_service.py` — USER_DELETED action
+- `backend/app/api/routes/users.py` — bulk-status, delete routes
+- `backend/app/api/routes/auth.py` — 429/409 docs
+- `backend/app/api/router.py` — stats route
+- `backend/app/main.py` — background token-purge task
+- `backend/.env.example` — rate-limit settings
+- `frontend/src/types/auth.ts` — email in UpdateProfileInput
+- `frontend/src/types/user.ts` — UserBulkStatusInput/Result
+- `frontend/src/features/account/accountSchemas.ts` — email in profileSchema
+- `frontend/src/features/account/ProfileForm.tsx` — email field, 409 handling
+- `frontend/src/features/users/useUsers.ts` — real bulk endpoint, useDeleteUser
+- `frontend/src/services/usersService.ts` — bulkSetActive, delete
+- `frontend/src/services/queryKeys.ts` — stats.dashboard key
+- `frontend/src/pages/UsersPage.tsx` — delete action, real bulk, no "(demo)"
+- `frontend/src/pages/DashboardPage.tsx` — real stats, Skeleton loading state
+- `frontend/src/pages/LoginPage.tsx` — session-expiry alert
+
+### Architectural and design decisions
+
+- Rate limiter is in-memory and per-process. For multi-process/multi-server deployments, replace
+  with a Redis-backed counter. The module exposes `get_login_rate_limiter()` as a lazy singleton
+  so tests can override it.
+- `PATCH /users/bulk-status` is defined BEFORE `PATCH /{user_id}` in the router so FastAPI does
+  not greedily match the literal "bulk-status" as a user_id.
+- The GIN indexes use `IF NOT EXISTS` in SQL so the migration is idempotent. `pg_trgm` is not
+  dropped on downgrade as other schemas may rely on it.
+- The `_purge_expired_tokens_loop` uses `asyncio.sleep` and runs every 3600 s. It handles
+  exceptions gracefully (logs and retries next cycle). The `suppress()` context manager is used
+  instead of try/except/pass per ruff SIM105.
+- Dashboard stats endpoint requires `users:read` (same as the Users page). Frontend hides
+  stats for users without this permission.
+- Profile email update is optional: send the field only when it changed (frontend compares
+  current user email before submitting).
+- `UserBulkStatusUpdate.user_ids` is deduplicated in the service before processing.
+
+### Dependencies changed
+
+None.
+
+### Validation performed
+
+- `ruff format --check .`: 0 unformatted files.
+- `ruff check .`: all checks passed.
+- `mypy app tests` (strict): no issues in 74 source files.
+- `pytest` (against throwaway PostgreSQL 12 at 127.0.0.1:5441): **97 passed**.
+- `npm run format:check`: 0 issues.
+- `npm run lint` (ESLint, --max-warnings=0): 0 problems.
+- `npm run typecheck` (tsc -b --noEmit): OK.
+- `npm test` (Vitest, Node 24.12.0): **45 passed** in 8 files.
+- `npm run build`: exit 0.
+
+### Known issues
+
+- Login rate limiter is in-memory only; does not survive process restarts and is not shared
+  across multiple server processes/instances.
+- pg_trgm GIN index creation requires `SUPERUSER` or `pg_extension` privilege. For managed
+  databases (RDS, Cloud SQL) the DBA must run `CREATE EXTENSION IF NOT EXISTS pg_trgm` manually
+  before applying this migration.
+- The test PostgreSQL 12 cluster at 127.0.0.1:5441 is temporary and must be recreated if it is
+  lost. The system PG 12 at :5432 still lacks the `base_project` role (sudo required to create it).
+
+### Pending tasks
+
+- Add rate-limit tests (unit + integration) for the new 429 flow.
+- Add integration tests for the new routes: `PATCH /users/bulk-status`, `DELETE /users/{id}`,
+  `GET /stats`, and audit log `from_date`/`to_date` filter.
+- Add frontend tests for `ProfileForm` email field and `UsersPage` delete action.
+- Replace in-memory rate limiter with Redis for multi-process deployments if needed.
+- Add `Retry-After` header to 429 responses from the rate limiter.

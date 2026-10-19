@@ -30,6 +30,10 @@ class AuditLogRepository:
             conditions.append(AuditLog.resource_type == query.resource_type)
         if query.resource_id:
             conditions.append(AuditLog.resource_id == query.resource_id)
+        if query.from_date is not None:
+            conditions.append(AuditLog.created_at >= query.from_date)
+        if query.to_date is not None:
+            conditions.append(AuditLog.created_at <= query.to_date)
 
         base = select(AuditLog).where(*conditions)
         total = count_rows(self.session, base)

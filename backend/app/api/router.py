@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.routes import audit_logs, auth, health, roles, users
+from app.api.routes import audit_logs, auth, health, roles, stats, users
 
 api_router = APIRouter()
 api_router.include_router(health.router, prefix="/health", tags=["health"])
@@ -10,6 +10,7 @@ api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(roles.router, prefix="/roles", tags=["roles"])
 api_router.include_router(audit_logs.router, prefix="/audit-logs", tags=["audit-logs"])
+api_router.include_router(stats.router, prefix="/stats", tags=["stats"])
 
 OPENAPI_TAGS = [
     {"name": "health", "description": "Liveness and readiness probes."},
@@ -17,4 +18,5 @@ OPENAPI_TAGS = [
     {"name": "users", "description": "User administration (permission-protected)."},
     {"name": "roles", "description": "Role administration (permission-protected)."},
     {"name": "audit-logs", "description": "Read-only audit trail (admin only)."},
+    {"name": "stats", "description": "Dashboard statistics (requires users:read)."},
 ]

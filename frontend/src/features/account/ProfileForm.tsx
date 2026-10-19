@@ -7,13 +7,14 @@ import { FormErrorAlert } from '@/components/forms/FormErrorAlert';
 import { TextField } from '@/components/forms/TextField';
 import { AppButton } from '@/components/ui/AppButton';
 import { useAuth } from '@/features/auth/useAuth';
+import { ApiError } from '@/services/apiError';
 import { authService } from '@/services/authService';
 import type { CurrentUser } from '@/types/auth';
 import { applyApiValidationErrors } from '@/utils/formErrors';
 
 import { profileSchema, type ProfileValues } from './accountSchemas';
 
-/** Updates the signed-in user's display name (PATCH /auth/me). Email and role are read-only. */
+/** Updates the signed-in user's display name and email (PATCH /auth/me). */
 export function ProfileForm({ user }: { user: CurrentUser }) {
   const { updateUser } = useAuth();
   const { showToast } = useToast();
@@ -26,18 +27,26 @@ export function ProfileForm({ user }: { user: CurrentUser }) {
     formState: { errors, isSubmitting, isDirty },
   } = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { name: user.name },
+    defaultValues: { name: user.name, email: user.email },
   });
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      const updated = await authService.updateProfile(values);
+      const updated = await authService.updateProfile({
+        name: values.name,
+        // Only send email when the user actually changed it.
+        ...(values.email !== user.email ? { email: values.email } : {}),
+      });
       updateUser(updated);
-      reset({ name: updated.name });
+      reset({ name: updated.name, email: updated.email });
       showToast({ variant: 'success', message: 'Profile updated.' });
     } catch (error) {
-      setFormError(applyApiValidationErrors(error, setError, ['name']));
+      if (error instanceof ApiError && error.status === 409) {
+        setError('email', { type: 'server', message: error.message }, { shouldFocus: true });
+        return;
+      }
+      setFormError(applyApiValidationErrors(error, setError, ['name', 'email']));
     }
   });
 
@@ -54,9 +63,10 @@ export function ProfileForm({ user }: { user: CurrentUser }) {
       <TextField
         label="Email"
         type="email"
-        value={user.email}
-        readOnly
-        helpText="Contact an administrator to change your email address."
+        required
+        autoComplete="email"
+        error={errors.email?.message}
+        {...register('email')}
       />
       <TextField label="Role" value={user.role.name} readOnly />
       <AppButton type="submit" isLoading={isSubmitting} loadingText="Saving…" disabled={!isDirty}>

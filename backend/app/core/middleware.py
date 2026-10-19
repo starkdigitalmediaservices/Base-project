@@ -18,6 +18,11 @@ _SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",
+    # Restrict which resources the browser loads; tighten further once a real frontend
+    # is deployed behind a CDN with known hashes/nonces.
+    "Content-Security-Policy": ("default-src 'none'; frame-ancestors 'none';"),
+    # Opt out of browser features this API does not use.
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
 }
 
 

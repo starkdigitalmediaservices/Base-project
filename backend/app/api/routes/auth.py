@@ -36,7 +36,7 @@ def _token_response(response: Response, result: AuthResult) -> TokenResponse:
     "/login",
     summary="Log in with email and password",
     response_model=TokenResponse,
-    responses=error_responses(401, 403, 422),
+    responses=error_responses(401, 403, 422, 429),
 )
 def login(
     body: LoginRequest, response: Response, db: DbSession, client: ClientInfoDep
@@ -87,7 +87,7 @@ def get_me(user: CurrentUserDep) -> CurrentUser:
     "/me",
     summary="Update the current user's profile",
     response_model=CurrentUser,
-    responses=error_responses(401, 403, 422),
+    responses=error_responses(401, 403, 409, 422),
 )
 def update_me(
     body: ProfileUpdate, user: CurrentUserDep, db: DbSession, client: ClientInfoDep

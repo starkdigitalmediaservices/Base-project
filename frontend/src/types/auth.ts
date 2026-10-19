@@ -20,6 +20,7 @@ export interface TokenResponse {
 
 export interface UpdateProfileInput {
   name: string;
+  email?: string;
 }
 
 export interface ChangePasswordInput {

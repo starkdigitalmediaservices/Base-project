@@ -34,3 +34,13 @@ export interface UserUpdateInput {
   role_id?: number;
   is_active?: boolean;
 }
+
+export interface UserBulkStatusInput {
+  user_ids: number[];
+  is_active: boolean;
+}
+
+export interface UserBulkStatusResult {
+  updated: number;
+  skipped: number;
+}

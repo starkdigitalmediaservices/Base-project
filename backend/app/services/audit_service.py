@@ -19,6 +19,7 @@ class AuditAction(StrEnum):
     PROFILE_UPDATED = "auth.profile.updated"
     USER_CREATED = "user.created"
     USER_UPDATED = "user.updated"
+    USER_DELETED = "user.deleted"
     ROLE_CREATED = "role.created"
     ROLE_UPDATED = "role.updated"
     ROLE_DELETED = "role.deleted"

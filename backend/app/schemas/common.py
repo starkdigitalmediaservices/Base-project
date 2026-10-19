@@ -55,6 +55,7 @@ _ERROR_DESCRIPTIONS = {
     404: "Resource not found",
     409: "Conflict with existing data",
     422: "Validation error",
+    429: "Too many requests",
     503: "Service unavailable",
 }
 

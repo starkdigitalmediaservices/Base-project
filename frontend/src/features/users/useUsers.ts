@@ -58,33 +58,19 @@ export function useUpdateUser() {
   });
 }
 
-export interface BulkResult {
-  succeeded: User[];
-  failed: User[];
-}
-
-/**
- * DEMO bulk action: activates/deactivates users with one PATCH per user. For large selections add a
- * dedicated backend bulk endpoint instead.
- */
 export function useSetUsersActive() {
   const invalidate = useInvalidateUserData();
   return useMutation({
-    mutationFn: async ({ users, isActive }: { users: User[]; isActive: boolean }) => {
-      const results = await Promise.allSettled(
-        users.map((user) => usersService.update(user.id, { is_active: isActive })),
-      );
-      return results.reduce<BulkResult>(
-        (summary, result, index) => {
-          const user = users[index];
-          if (user) {
-            (result.status === 'fulfilled' ? summary.succeeded : summary.failed).push(user);
-          }
-          return summary;
-        },
-        { succeeded: [], failed: [] },
-      );
-    },
-    onSettled: invalidate,
+    mutationFn: ({ users, isActive }: { users: User[]; isActive: boolean }) =>
+      usersService.bulkSetActive({ user_ids: users.map((u) => u.id), is_active: isActive }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteUser() {
+  const invalidate = useInvalidateUserData();
+  return useMutation({
+    mutationFn: (id: number) => usersService.delete(id),
+    onSuccess: invalidate,
   });
 }

@@ -7,7 +7,14 @@ from app.core.permissions import Permission
 from app.models import User
 from app.schemas.common import error_responses
 from app.schemas.pagination import Page
-from app.schemas.user import UserCreate, UserListQuery, UserRead, UserUpdate
+from app.schemas.user import (
+    UserBulkStatusResult,
+    UserBulkStatusUpdate,
+    UserCreate,
+    UserListQuery,
+    UserRead,
+    UserUpdate,
+)
 from app.services.user_service import UserService
 
 router = APIRouter()
@@ -50,6 +57,24 @@ def create_user(
     return UserRead.model_validate(user)
 
 
+# NOTE: literal sub-paths (/bulk-status) must be defined BEFORE parameterised paths
+# (/{user_id}) so FastAPI/Starlette does not greedily match "bulk-status" as a user_id.
+@router.patch(
+    "/bulk-status",
+    summary="Bulk activate or deactivate users",
+    response_model=UserBulkStatusResult,
+    responses=error_responses(400, 401, 403, 422),
+)
+def bulk_update_status(
+    body: UserBulkStatusUpdate, actor: CanWriteUsers, db: DbSession, client: ClientInfoDep
+) -> UserBulkStatusResult:
+    """Activate or deactivate up to 100 users in a single request.
+
+    The actor's own account is always skipped. Users already in the target state are skipped.
+    """
+    return UserService(db).bulk_update_status(body, actor=actor, client=client)
+
+
 @router.get(
     "/{user_id}",
     summary="Get a user",
@@ -76,3 +101,16 @@ def update_user(
     """Deactivating a user or resetting their password revokes all of their sessions."""
     user = UserService(db).update_user(user_id, body, actor=actor, client=client)
     return UserRead.model_validate(user)
+
+
+@router.delete(
+    "/{user_id}",
+    summary="Delete a user",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=error_responses(400, 401, 403, 404),
+)
+def delete_user(
+    user_id: UserId, actor: CanWriteUsers, db: DbSession, client: ClientInfoDep
+) -> None:
+    """Permanently deletes the user and revokes all their sessions. Cannot delete yourself."""
+    UserService(db).delete_user(user_id, actor=actor, client=client)
